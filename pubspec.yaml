@@ -20,6 +20,7 @@ dependencies:
   shared_preferences: ^2.2.3
   uuid: ^4.4.0
   permission_handler: ^11.3.1
+  device_info_plus: ^10.1.0
   sqflite_common_ffi: ^2.3.0
   path: ^1.9.0
   cupertino_icons: ^1.0.8

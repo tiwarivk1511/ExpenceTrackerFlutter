@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionService {
@@ -11,11 +13,16 @@ class PermissionService {
   }
 
   Future<bool> requestStoragePermission() async {
-    // For Android 13 and above, this is handled by Photos permission
-    // For older versions, it's storage permission
-    if (await Permission.photos.isGranted) {
-      return true;
+    if (Platform.isAndroid) {
+      final androidInfo = await DeviceInfoPlugin().androidInfo;
+      if (androidInfo.version.sdkInt <= 32) {
+        return await _requestPermission(Permission.storage);
+      } else {
+        return await _requestPermission(Permission.photos);
+      }
+    } else {
+      // For iOS and other platforms, we can just request photos permission
+      return await _requestPermission(Permission.photos);
     }
-    return await _requestPermission(Permission.photos);
   }
 }

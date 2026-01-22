@@ -25,6 +25,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   File? _image;
   late DateTime _selectedDate;
   final PermissionService _permissionService = PermissionService();
+  final ImagePicker _picker = ImagePicker();
   bool get _isEditing => widget.expense != null;
 
   @override
@@ -38,29 +39,62 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     }
   }
 
-  Future<void> _pickImage() async {
-    final hasCameraPermission = await _permissionService.requestCameraPermission();
-    if (!hasCameraPermission) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Camera permission is required to take a photo.')),
-      );
-      return;
+  Future<void> _getImage(ImageSource source) async {
+    bool hasPermission = false;
+    if (source == ImageSource.camera) {
+      hasPermission = await _permissionService.requestCameraPermission();
+      if (!hasPermission) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Camera permission is required to take a photo.')),
+        );
+        return;
+      }
+    } else {
+      hasPermission = await _permissionService.requestStoragePermission();
+      if (!hasPermission) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Storage permission is required to select a photo.')),
+        );
+        return;
+      }
     }
 
-    final hasStoragePermission = await _permissionService.requestStoragePermission();
-    if (!hasStoragePermission) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Storage permission is required to select a photo.')),
-      );
-      return;
-    }
-
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await _picker.pickImage(source: source);
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
       });
     }
+  }
+
+  void _showImageSourceDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Image Source'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _getImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _getImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -166,7 +200,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                           const Text('Image'),
                           IconButton(
                             icon: const Icon(Icons.camera_alt),
-                            onPressed: _pickImage,
+                            onPressed: _showImageSourceDialog,
                           ),
                         ],
                       ),
